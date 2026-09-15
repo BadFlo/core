@@ -1741,13 +1741,12 @@ vm_extract_image() {
   [[ -n "$target" ]] || target="${VM_IMAGE_TMP_DIR:-/var/lib/vz/template/tmp}/$(basename "${src%.*}")"
   mkdir -p "$(dirname "$target")"
 
-  msg_info "Extracting $(basename "$src")"
   if command -v pv >/dev/null 2>&1; then
-    # pv draws its own progress, so the spinner has to go first.
-    stop_spinner 2>/dev/null || true
-    "$tool" -dc "$src" | pv -N Extracting >"$target"
+    # pv is the progress indicator here; a spinner would fight it for the line.
+    "$tool" -dc "$src" | pv -N "Extracting $(basename "$src")" >"$target"
     rc=${PIPESTATUS[0]}
   else
+    msg_info "Extracting $(basename "$src")"
     "$tool" -dc "$src" >"$target"
     rc=$?
   fi
