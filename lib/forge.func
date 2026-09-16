@@ -1960,8 +1960,8 @@ fetch_and_deploy_release() {
     [[ "${DPKG_FORCE_CONFOLD:-}" == "1" ]] && dpkg_opts="-o Dpkg::Options::=--force-confold"
     [[ "${DPKG_FORCE_CONFNEW:-}" == "1" ]] && dpkg_opts="-o Dpkg::Options::=--force-confnew"
     DEBIAN_FRONTEND=noninteractive SYSTEMD_OFFLINE=1 $STD apt install -y $dpkg_opts "$tmpdir/$filename" || {
-      SYSTEMD_OFFLINE=1 $STD dpkg -i "$tmpdir/$filename" || {
-        _diagnose_deb_failure "$tmpdir/$filename"
+      SYSTEMD_OFFLINE=1 dpkg -i "$tmpdir/$filename" >"$tmpdir/dpkg.log" 2>&1 || {
+        _diagnose_deb_failure "$tmpdir/$filename" "$tmpdir/dpkg.log"
         _cs_repair_dpkg
         return 100
       }
@@ -2163,8 +2163,8 @@ fetch_and_deploy_from_url() {
 
     chmod 644 "$tmpdir/$filename"
     $STD apt install -y "$tmpdir/$filename" || {
-      $STD dpkg -i "$tmpdir/$filename" || {
-        _diagnose_deb_failure "$tmpdir/$filename"
+      dpkg -i "$tmpdir/$filename" >"$tmpdir/dpkg.log" 2>&1 || {
+        _diagnose_deb_failure "$tmpdir/$filename" "$tmpdir/dpkg.log"
         _cs_repair_dpkg
         return 100
       }
