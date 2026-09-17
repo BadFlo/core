@@ -1026,8 +1026,48 @@ vm_prompt_vmid() {
   done
 }
 
+vm_arch() {
+  case "${VM_ARCH:-$(dpkg --print-architecture 2>/dev/null || uname -m)}" in
+  arm64 | aarch64) echo "arm64" ;;
+  *) echo "amd64" ;;
+  esac
+}
+
+vm_arch_resolve() {
+  if [[ "$(vm_arch)" == "arm64" ]]; then
+    echo "${2:-arm64}"
+  else
+    echo "${1:-amd64}"
+  fi
+}
+
+# A script whose upstream publishes one architecture only says so here, rather
+# than downloading an image the host can never boot.
+vm_require_arch() {
+  local want="${1:-amd64}" have
+  have="$(vm_arch)"
+  [[ "$have" == "$want" ]] && return 0
+  msg_error "${APP:-This VM} is only published for ${want}, and this host is ${have}"
+  exit 106
+}
+
+# OVMF keeps its vars in 4M, AAVMF needs 64M. qm set -efidisk0 writes the
+# firmware vars into the volume allocated here, so the size has to match.
+vm_alloc_efi_disk() {
+  pvesm alloc "$STORAGE" "$VMID" "${1:-$DISK0}" "$(vm_arch_resolve 4M 64M)" 1>&/dev/null
+}
+
 vm_apply_machine_type() {
   local machine_type="${1:-i440fx}"
+
+  # aarch64 QEMU has neither chipset and no SeaBIOS: virt is the only machine
+  # type, and efitype is ignored for it.
+  if [[ "$(vm_arch)" == "arm64" ]]; then
+    MACHINE_TYPE="virt"
+    FORMAT=""
+    MACHINE=" -machine virt"
+    return 0
+  fi
 
   if [ "$machine_type" = "q35" ]; then
     MACHINE_TYPE="q35"
@@ -1043,11 +1083,18 @@ vm_apply_machine_type() {
 vm_cpu_model_label() {
   local model="${CPU_TYPE:-}"
   model="${model# -cpu }"
-  echo "${model:-KVM64}"
+  if [[ -n "$model" ]]; then
+    echo "$model"
+  else
+    vm_arch_resolve "KVM64" "Host"
+  fi
 }
 
 vm_machine_type_label() {
   case "${1:-i440fx}" in
+  virt)
+    echo "virt (ARM64)"
+    ;;
   q35)
     echo "Q35 (Modern)"
     ;;
@@ -1062,6 +1109,13 @@ vm_prompt_machine_type() {
   local i440fx_default="ON"
   local q35_default="OFF"
   local machine_choice
+
+  # Nothing to choose on aarch64 - asking would offer two types QEMU refuses.
+  if [[ "$(vm_arch)" == "arm64" ]]; then
+    vm_apply_machine_type "$default_machine"
+    echo -e "${CONTAINERTYPE}${BOLD}${DGN}Machine Type: ${BGN}$(vm_machine_type_label "$MACHINE_TYPE")${CL}"
+    return 0
+  fi
 
   if [ "$default_machine" = "q35" ]; then
     i440fx_default="OFF"
@@ -1312,6 +1366,14 @@ vm_prompt_cpu_model() {
   if [ "$default_model" = "host" ]; then
     kvm_default="OFF"
     host_default="ON"
+  fi
+
+  # Every entry below is an x86 model. On aarch64 Proxmox picks host under KVM,
+  # which is what an empty CPU_TYPE leaves it to do.
+  if [[ "$(vm_arch)" == "arm64" ]]; then
+    CPU_TYPE=""
+    echo -e "${OS}${BOLD}${DGN}CPU Model: ${BGN}$(vm_cpu_model_label)${CL}"
+    return 0
   fi
 
   local v2_default="OFF" v3_default="OFF" v4_default="OFF"
