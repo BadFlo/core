@@ -1158,17 +1158,19 @@ _forge_descriptor() {
 # ------------------------------------------------------------------------------
 # Every forge lists releases newest-published first, which is not newest
 # version: a patch backported to an older line is published after the newer
-# minor. Order by version instead.
-_FORGE_JQ_VKEY='((.tag_name // "") | sub("^[vV]";"") | [scan("[0-9]+")] | map(tonumber))'
+# minor. Order by version instead. The leading 0/1 ranks separated tags above
+# bare ones, or a legacy CI run id like 140992663 outranks every real version.
+_FORGE_JQ_VKEY='((.tag_name // "") | sub("^[vV]";"") | [(if test("[0-9]+[._-][0-9]+") then 1 else 0 end), ([scan("[0-9]+")] | map(tonumber))])'
 
 # Highest of the versions on stdin.
 _forge_highest_version() {
-  local line key
+  local line key rank
   while IFS= read -r line; do
     [[ -n "$line" ]] || continue
+    [[ "$line" =~ [0-9]+[._-][0-9]+ ]] && rank=1 || rank=0
     key="$(printf '%s' "$line" | grep -oE '[0-9]+' | tr '\n' '.')"
-    printf '%s\t%s\n' "${key:-0}" "$line"
-  done | sort -V -k1,1 | tail -n1 | cut -f2-
+    printf '%s\t%s\t%s\n' "$rank" "${key:-0}" "$line"
+  done | sort -V -k1,1 -k2,2 | tail -n1 | cut -f3-
 }
 
 # Is $1 already at or ahead of $2?
