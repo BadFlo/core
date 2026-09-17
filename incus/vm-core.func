@@ -501,6 +501,31 @@ vm_confirm_advanced_settings() {
   prompt_confirm "${1:-Ready to create VM?}" "y" 120
 }
 
+# Parity with pve/vm-core.func: a shared template may ask for the host
+# architecture on either backend. Incus itself picks the image arch.
+vm_arch() {
+  case "${VM_ARCH:-$(dpkg --print-architecture 2>/dev/null || uname -m)}" in
+  arm64 | aarch64) echo "arm64" ;;
+  *) echo "amd64" ;;
+  esac
+}
+
+vm_arch_resolve() {
+  if [[ "$(vm_arch)" == "arm64" ]]; then
+    echo "${2:-arm64}"
+  else
+    echo "${1:-amd64}"
+  fi
+}
+
+vm_require_arch() {
+  local want="${1:-amd64}" have
+  have="$(vm_arch)"
+  [[ "$have" == "$want" ]] && return 0
+  msg_error "${APP:-This VM} is only published for ${want}, and this host is ${have}"
+  exit 106
+}
+
 # ── Proxmox-only hardware knobs ───────────────────────────────────────────────
 # Incus exposes no QEMU machine type and no CPU model: the instance option list
 # has limits.cpu for the count and a topology, and nothing for either of these.
