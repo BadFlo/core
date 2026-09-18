@@ -1140,7 +1140,9 @@ vm_prompt_cloud_init() {
 
   # Interactive by nature; VM_CLOUD_INIT decides it for unattended runs.
   if [[ "${VM_UNATTENDED:-0}" == "1" ]]; then
-    USE_CLOUD_INIT="${VM_CLOUD_INIT:-no}"
+    local fallback="no"
+    [[ "${CLOUDINIT_REQUIRED:-0}" == "1" ]] && fallback="yes"
+    USE_CLOUD_INIT="${VM_CLOUD_INIT:-$fallback}"
     echo -e "${CLOUD}${BOLD}${DGN}Cloud-Init: ${BGN}${USE_CLOUD_INIT}${CL}"
     [[ "$USE_CLOUD_INIT" == "yes" ]] && load_cloud_init_functions
     return 0

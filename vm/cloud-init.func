@@ -450,11 +450,14 @@ function configure_cloud_init_interactive() {
     return 1
   fi
 
-  # Ask if user wants to enable Cloud-Init
-  if ! (whiptail --backtitle "Proxmox VE Helper Scripts" --title "CLOUD-INIT" \
-    --yesno "Enable Cloud-Init for VM configuration?\n\nCloud-Init allows automatic configuration of:\n• User accounts and passwords\n• SSH keys\n• Network settings (DHCP/Static)\n• DNS configuration\n\nYou can also configure these settings later in Proxmox UI." 16 68); then
-    export CLOUDINIT_ENABLE="no"
-    return 0
+  # Images with no other way in set CLOUDINIT_REQUIRED, and then the question is
+  # only which credentials, not whether.
+  if [[ "${CLOUDINIT_REQUIRED:-0}" != "1" ]]; then
+    if ! (whiptail --backtitle "Proxmox VE Helper Scripts" --title "CLOUD-INIT" \
+      --yesno "Enable Cloud-Init for VM configuration?\n\nCloud-Init allows automatic configuration of:\n• User accounts and passwords\n• SSH keys\n• Network settings (DHCP/Static)\n• DNS configuration\n\nYou can also configure these settings later in Proxmox UI." 16 68); then
+      export CLOUDINIT_ENABLE="no"
+      return 0
+    fi
   fi
 
   export CLOUDINIT_ENABLE="yes"
