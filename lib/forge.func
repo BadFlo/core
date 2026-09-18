@@ -1221,10 +1221,18 @@ _forge_http_get() {
   auth="$(_forge_descriptor "$forge" auth)"
   [[ -n "$auth" ]] && headers+=(-H "$auth")
 
-  # Both a dropped connection and a truncated body land on 000; retry either.
-  local attempt=1 delay=2
+  # A dropped connection, a truncated body and a non-JSON 200 all land on 000.
+  local attempt=1 delay=2 api_message=""
   while :; do
     code="$(_forge_curl "$out" "${headers[@]}" "$url")"
+    if [[ "$code" == "200" ]] && command -v jq >/dev/null 2>&1; then
+      if ! jq -e . >/dev/null 2>&1 <"$out"; then
+        code="000"
+      else
+        api_message="$(jq -r 'if type == "object" and has("message") and (has("tag_name") | not)
+          then .message else empty end' "$out" 2>/dev/null)"
+      fi
+    fi
     [[ "$code" != "000" ]] && break
     ((attempt >= 3)) && break
     sleep "$delay"
@@ -1232,10 +1240,15 @@ _forge_http_get() {
     ((attempt++))
   done
 
+  if [[ -n "$api_message" ]]; then
+    msg_error "${forge}: ${api_message}"
+    return 22
+  fi
+
   case "$code" in
   200) return 0 ;;
   000)
-    msg_error "${forge}: connection failed or response cut short after ${attempt} attempts"
+    msg_error "${forge}: connection failed, or the response was cut short or not JSON, after ${attempt} attempts"
     return 7
     ;;
   401)
@@ -1425,8 +1438,13 @@ _forge_release_json() {
     rm -f "$raw"
   fi
 
+  # The payload parsed, so an empty selection is the repository's state.
   [[ -s "$out" ]] || {
-    msg_error "No matching release found for ${repo}"
+    if [[ -n "$tag_prefix" ]]; then
+      msg_error "${repo} has no stable release whose tag starts with '${tag_prefix}'"
+    else
+      msg_error "${repo} has no stable release to install"
+    fi
     return 250
   }
   return 0
