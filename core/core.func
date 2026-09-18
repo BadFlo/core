@@ -2409,6 +2409,49 @@ apt_update_safe() {
   return 0
 }
 
+# dpkg's conffile prompt has no tty during an update and takes the whole run
+# with it. APT_CONFIG is read after apt.conf.d and dies with the process, so an
+# early exit cannot leave a drop-in behind.
+_cs_conffile_list() {
+  find "${_CS_CONFFILE_ROOT:-/etc}" -maxdepth 6 \( -name '*.dpkg-dist' -o -name '*.dpkg-new' \) 2>/dev/null | sort
+}
+
+apt_conffile_guard() {
+  command -v apt-get >/dev/null 2>&1 || return 0
+  [[ -n "${_CS_CONFFILE_GUARD:-}" ]] && return 0
+
+  local conf
+  conf="$(mktemp 2>/dev/null)" || return 0
+  printf 'Dpkg::Options { "--force-confdef"; "--force-confold"; };\n' >"$conf" 2>/dev/null || {
+    rm -f "$conf"
+    return 0
+  }
+
+  export APT_CONFIG="$conf"
+  _CS_CONFFILE_GUARD="$conf"
+  _CS_CONFFILE_BASELINE="$(_cs_conffile_list)"
+  return 0
+}
+
+apt_conffile_report() {
+  [[ -n "${_CS_CONFFILE_GUARD:-}" ]] || return 0
+
+  local added
+  added="$(comm -13 <(printf '%s\n' "${_CS_CONFFILE_BASELINE:-}") <(_cs_conffile_list) 2>/dev/null)"
+  rm -f "$_CS_CONFFILE_GUARD"
+  _CS_CONFFILE_GUARD=""
+  unset APT_CONFIG
+  [[ -n "${added//[[:space:]]/}" ]] || return 0
+
+  msg_warn "Kept your version of these config files - upstream shipped changes to them too:"
+  local f
+  while IFS= read -r f; do
+    [[ -n "$f" ]] || continue
+    echo -e "${TAB}${YW}${f%.dpkg-*}${CL} - new upstream version at ${YW}${f}${CL}"
+  done <<<"$added"
+  return 0
+}
+
 # ------------------------------------------------------------------------------
 # ensure_whiptail()
 #
