@@ -176,10 +176,11 @@ get_header() {
 }
 
 header_info() {
-  local app_name=$(echo "${APP,,}" | tr ' ' '-')
+  # Hand the name over unchanged. Hyphenating it here asked for
+  # home-assistant-os instead of homeassistantos, and hid the word boundaries
+  # get_header needs to drop a trailing version.
   local header_content
-
-  header_content=$(get_header "$app_name") || header_content=""
+  header_content=$(get_header "${1:-$APP}") || header_content=""
 
   _cs_clear
   local term_width
