@@ -2572,7 +2572,7 @@ apt_update_safe() {
 _cs_conffile_list() {
   # 2>/dev/null hides find's message about an unreadable /etc/credstore, not its
   # exit status, which pipefail then passes on as if sort had failed.
-  { find "${_CS_CONFFILE_ROOT:-/etc}" -maxdepth 6 \( -name '*.dpkg-dist' -o -name '*.dpkg-new' \) 2>/dev/null || true; } | sort
+  { find "${_CS_CONFFILE_ROOT:-/etc}" -maxdepth 6 \( -name '*.dpkg-dist' -o -name '*.dpkg-new' \) 2>/dev/null || true; } | LC_ALL=C sort
 }
 
 apt_conffile_guard() {
@@ -2596,7 +2596,7 @@ apt_conffile_report() {
   [[ -n "${_CS_CONFFILE_GUARD:-}" ]] || return 0
 
   local added
-  added="$(comm -13 <(printf '%s\n' "${_CS_CONFFILE_BASELINE:-}") <(_cs_conffile_list) 2>/dev/null)"
+  added="$(LC_ALL=C comm -13 <(printf '%s\n' "${_CS_CONFFILE_BASELINE:-}") <(_cs_conffile_list) 2>/dev/null)"
   rm -f "$_CS_CONFFILE_GUARD"
   _CS_CONFFILE_GUARD=""
   unset APT_CONFIG
