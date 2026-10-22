@@ -36,6 +36,8 @@ on:
       - "tests/exit-code-hints.sh"
       - "tests/forge-release-json.sh"
       - "tests/install-cleanup.sh"
+      - "tests/incus-target.sh"
+      - "tests/incus-storage-space.sh"
       - "tests/release-stamp-pending.sh"
       - ".github/workflows/verify-split-files.yml"
   push:
@@ -64,6 +66,8 @@ on:
       - "tests/exit-code-hints.sh"
       - "tests/forge-release-json.sh"
       - "tests/install-cleanup.sh"
+      - "tests/incus-target.sh"
+      - "tests/incus-storage-space.sh"
       - "tests/release-stamp-pending.sh"
       - ".github/workflows/verify-split-files.yml"
   workflow_dispatch:
@@ -128,6 +132,11 @@ jobs:
       - name: Install cleanup and uv trap tests
         run: bash tests/install-cleanup.sh
 
+      - name: Incus target tests
+        run: bash tests/incus-target.sh
+
+      - name: Incus storage space tests
+        run: bash tests/incus-storage-space.sh
       - name: Release stamp pending marker tests
         run: bash tests/release-stamp-pending.sh
 

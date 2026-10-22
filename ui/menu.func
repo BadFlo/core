@@ -141,7 +141,7 @@ echo_default() {
   echo -e "${DISKSIZE}${BOLD}${DGN}Disk Size: ${BGN}${DISK_SIZE} GB${CL}"
   echo -e "${CPUCORE}${BOLD}${DGN}CPU Cores: ${BGN}${CORE_COUNT}${CL}"
   echo -e "${RAMSIZE}${BOLD}${DGN}RAM Size: ${BGN}${RAM_SIZE} MiB${CL}"
-  if [[ "$(dpkg --print-architecture)" == "arm64" ]]; then
+  if [[ "$(_cs_host_arch)" == "arm64" ]]; then
     echo -e "${INFO}${BOLD}${DGN}Architecture: ${BGN}arm64${CL}"
   fi
   if [[ -n "${var_gpu:-}" && "${var_gpu}" == "yes" ]]; then
@@ -209,7 +209,7 @@ install_script() {
   storage_content_check
   diagnostics_check
 
-  if systemctl is-active -q ping-instances.service; then
+  if command -v systemctl >/dev/null 2>&1 && systemctl is-active -q ping-instances.service; then
     systemctl -q stop ping-instances.service
   fi
 
