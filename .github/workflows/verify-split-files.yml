@@ -33,6 +33,7 @@ on:
       - "tests/nodejs-key-refresh.sh"
       - "tests/forge-connection.sh"
       - "tests/failed-command-output.sh"
+      - "tests/stale-silent-record.sh"
       - "tests/exit-code-hints.sh"
       - "tests/forge-release-json.sh"
       - "tests/install-cleanup.sh"
@@ -65,6 +66,7 @@ on:
       - "tests/nodejs-key-refresh.sh"
       - "tests/forge-connection.sh"
       - "tests/failed-command-output.sh"
+      - "tests/stale-silent-record.sh"
       - "tests/exit-code-hints.sh"
       - "tests/forge-release-json.sh"
       - "tests/install-cleanup.sh"
@@ -126,6 +128,8 @@ jobs:
 
       - name: Failed command output tests
         run: bash tests/failed-command-output.sh
+      - name: Stale silent record tests
+        run: bash tests/stale-silent-record.sh
 
       - name: Exit code hint tests
         run: bash tests/exit-code-hints.sh
