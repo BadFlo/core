@@ -40,6 +40,7 @@ on:
       - "tests/incus-storage-space.sh"
       - "tests/release-stamp-pending.sh"
       - "tests/pct-start-reason.sh"
+      - "tests/vm-silent.sh"
       - ".github/workflows/verify-split-files.yml"
   push:
     branches: [main]
@@ -71,6 +72,7 @@ on:
       - "tests/incus-storage-space.sh"
       - "tests/release-stamp-pending.sh"
       - "tests/pct-start-reason.sh"
+      - "tests/vm-silent.sh"
       - ".github/workflows/verify-split-files.yml"
   workflow_dispatch:
 
@@ -143,6 +145,8 @@ jobs:
         run: bash tests/release-stamp-pending.sh
       - name: pct start reason tests
         run: bash tests/pct-start-reason.sh
+      - name: VM silent helper tests
+        run: bash tests/vm-silent.sh
 
       - name: Prefetch lists cover every engine file
         run: |
